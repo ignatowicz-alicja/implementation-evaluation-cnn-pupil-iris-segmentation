@@ -1,0 +1,7 @@
+# Use this only when TensorFlow/Keras are already installed in the environment.
+numpy==1.26.4
+scipy==1.11.4
+opencv-python==4.10.0.84
+matplotlib==3.8.4
+scikit-learn==1.4.2
+h5py==3.10.0
