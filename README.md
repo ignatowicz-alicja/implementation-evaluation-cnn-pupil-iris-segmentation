@@ -41,6 +41,22 @@ Official dataset source:
 
 - [IIT Delhi Iris Database](https://www4.comp.polyu.edu.hk/~csajaykr/IITD/Database_Iris.htm)
 
+### Cataract-1K
+
+Cataract-1K is a medical dataset containing cataract surgery videos and pixel-level semantic segmentation annotations.
+
+In this study, the semantic segmentation subset was used for U-Net-based pupil segmentation. The pupil class was extracted from the original multi-class annotations and converted into binary masks, where the pupil represents the foreground and all remaining pixels represent the background.
+
+The experiments used 2,256 annotated frames extracted from 30 cataract surgery videos. The original frame resolution is 1024 × 768 pixels.
+
+Official sources:
+
+- [Cataract-1K GitHub repository](https://github.com/Negin-Ghamsarian/Cataract-1K)
+- [Cataract-1K publication](https://doi.org/10.1038/s41597-024-03193-4)
+
+The original Cataract-1K videos and annotations are not included in this repository. Users must obtain the dataset from the official source and comply with its licence and terms of use.
+
+
 ## Repository structure
 
 ```text
