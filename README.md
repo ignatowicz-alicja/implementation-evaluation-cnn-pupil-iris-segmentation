@@ -1,198 +1,120 @@
 # Implementation and Evaluation of CNN for Pupil and Iris Segmentation on Devices with Varying Computational Resources
 
-Supplementary repository for the article:
+Supplementary repository for the article **Implementation and Evaluation of CNN for Pupil and Iris Segmentation on Devices with Varying Computational Resources**.
 
-**Implementation and Evaluation of CNN for Pupil and Iris Segmentation on Devices with Varying Computational Resources**
+The repository contains reproducible experiment wrappers for CASIA-IrisV1, IIT Delhi and Cataract-1K. Original image datasets, trained weights and generated results are intentionally not published here.
 
-## Overview
+## What is original and what is project code
 
-This repository contains segmentation masks and reproducible experiment pipelines for classical and U-Net-based iris and pupil segmentation.
+The original external implementations are kept in separate directories and must not be edited by project wrappers:
 
-The experiments were prepared for biometric iris images from the **CASIA-IrisV1** and **IIT Delhi Iris Database** datasets.
+- `Classic_Masek_Kovesi_Evaluation/third_party/Iris-Recognition-master/` — external classical Masek/Kovesi implementation;
+- `pupil-segmentation-unet-evaluation/original_author_code/` — unchanged third-party U-Net source snapshot.
 
-The segmentation masks provided in this repository were prepared and manually verified for both datasets.
+The files at repository root, `scripts/`, `Classic_Masek_Kovesi_Evaluation/src/` and `pupil-segmentation-unet-evaluation/our_scripts/` are project-authored launchers, preparation, measurement, evaluation and export code. Source provenance for U-Net is recorded in `pupil-segmentation-unet-evaluation/provenance/`.
 
-The original third-party implementations are preserved without modification. Dataset integration, experiment execution, evaluation, timing measurements, visualisation, and result export are performed using separate wrapper scripts.
-
-## Datasets
-
-### CASIA-IrisV1
-
-CASIA-IrisV1 is a near-infrared biometric iris dataset containing 756 grayscale images with a resolution of 320 × 280 pixels.
-
-The dataset is used for classical iris segmentation, mask evaluation, and biometric recognition experiments.
-
-The pupil and iris masks included in this repository were prepared and manually verified.
-
-Official dataset sources:
-
-- [CASIA Iris Databases](https://english.ia.cas.cn/db/201610/t20161026_169399.html)
-- [CASIA Database Access Portal](https://www.idealtest.org/findDownloadDbByMode.do?mode=Iris)
-
-### IIT Delhi Iris Database
-
-The IIT Delhi Iris Database contains near-infrared grayscale iris images with a resolution of 320 × 240 pixels.
-
-The dataset is used for classical segmentation experiments and U-Net training and evaluation.
-
-The pupil and iris masks included in this repository were prepared and manually verified.
-
-Official dataset source:
-
-- [IIT Delhi Iris Database](https://www4.comp.polyu.edu.hk/~csajaykr/IITD/Database_Iris.htm)
-
-### Cataract-1K
-
-Cataract-1K is a medical dataset containing cataract surgery videos and pixel-level semantic segmentation annotations.
-
-In this study, the semantic segmentation subset was used for U-Net-based pupil segmentation. The pupil class was extracted from the original multi-class annotations and converted into binary masks, where the pupil represents the foreground and all remaining pixels represent the background.
-
-The experiments used 2,256 annotated frames extracted from 30 cataract surgery videos. The original frame resolution is 1024 × 768 pixels.
-
-Official sources:
-
-- [Cataract-1K GitHub repository](https://github.com/Negin-Ghamsarian/Cataract-1K)
-- [Cataract-1K publication](https://doi.org/10.1038/s41597-024-03193-4)
-
-The original Cataract-1K videos and annotations are not included in this repository. Users must obtain the dataset from the official source and comply with its licence and terms of use.
-
-
-## Repository structure
+## Structure
 
 ```text
 repository/
-├── datasets/
-│   ├── CASIA-IrisV1/
-│   │   └── masks/
-│   └── IITD/
-│       └── masks/
-│
-├── classical_pipeline/
-│   ├── third_party/
-│   ├── wrappers/
-│   ├── configs/
-│   └── run_pipeline.py
-│
-├── unet_pipeline/
-│   ├── third_party/
-│   ├── wrappers/
-│   ├── configs/
-│   └── run_pipeline.py
-│
-├── evaluation/
-├── reference_results/
-└── requirements.txt
+├── run_experiment.py                 # one main launcher: database / method / device
+├── experiment_profiles.py            # per-dataset settings, no local paths
+├── experiment_runner.py               # GPU detection and dispatch
+├── scripts/                           # 12 explicit database/method/device launchers
+│   ├── run_casia_classical_cpu.py
+│   ├── run_casia_classical_gpu.py
+│   ├── run_casia_unet_cpu.py
+│   ├── run_casia_unet_gpu.py
+│   ├── run_iitd_*.py
+│   └── run_cataract1k_*.py
+├── Classic_Masek_Kovesi_Evaluation/
+│   ├── src/python/                    # project evaluation wrapper
+│   └── third_party/Iris-Recognition-master/
+└── pupil-segmentation-unet-evaluation/
+    ├── our_scripts/                   # project U-Net wrapper
+    └── original_author_code/          # unchanged third-party code
 ```
 
-The `third_party` directories contain the original implementations used in the study. Their source code and original directory names are preserved without modification.
+There is a separate launcher for every combination of database, method and requested device. They use one shared dispatcher so hardware detection and result metadata are implemented once and consistently.
 
-The `wrappers` directories contain scripts developed for dataset preparation, experiment execution, evaluation, timing measurements, visualisation, and result export.
+## Datasets
 
-## Dataset preparation
+| Identifier | Dataset | Default dataset-specific setting |
+|---|---|---|
+| `casia` | CASIA-IrisV1 | subject is read from the filename prefix |
+| `iitd` | IIT Delhi Iris Database | subject is read from the parent directory |
+| `cataract1k` | Cataract-1K | parent directory is treated as a video/case |
 
-The original CASIA-IrisV1 and IITD images are not included in this repository.
-
-Download both datasets from their official providers and store them locally, for example:
-
-```text
-data/
-├── CASIA-IrisV1/
-└── IITD/
-```
-
-The provided segmentation masks should retain the same file names and directory structure as the corresponding source images.
+Obtain the original data from its respective publisher and provide local image and mask paths at runtime. The project does not redistribute Cataract-1K videos/annotations, or the original CASIA and IITD images.
 
 ## Installation
 
-Create a virtual environment:
+Create and activate a virtual environment, then install dependencies for the method that will be run:
 
 ```bash
 python -m venv .venv
-```
-
-Activate it on Windows:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
-
-Activate it on Linux:
-
-```bash
-source .venv/bin/activate
-```
-
-Install the required packages:
-
-```bash
+source .venv/bin/activate              # Linux / WSL
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install -r Classic_Masek_Kovesi_Evaluation/requirements.txt
+python -m pip install -r pupil-segmentation-unet-evaluation/requirements.txt
 ```
 
-## Classical pipeline
+On Windows PowerShell activate it with `& .\.venv\Scripts\Activate.ps1`.
 
-Run the classical pipeline for CASIA-IrisV1:
+For the classical implementation, also place the correctly licensed external `Iris-Recognition-master` source under `Classic_Masek_Kovesi_Evaluation/third_party/Iris-Recognition-master/` as described in its README.
+
+## Main launcher
+
+The main launcher accepts all choices as options:
 
 ```bash
-python classical_pipeline/run_pipeline.py \
-    --dataset casia \
-    --images-dir "/path/to/CASIA-IrisV1" \
-    --masks-dir "datasets/CASIA-IrisV1/masks" \
-    --output-dir "results/CASIA-IrisV1/classical"
+python run_experiment.py \
+  --dataset iitd --method unet --device gpu -- \
+  --images /path/to/IITD/images \
+  --masks /path/to/IITD/masks_pupil \
+  --output results/iitd/unet
 ```
 
-Run the classical pipeline for IITD:
+Or run it without the three selection options; it will ask for the database, `classical`/`unet`, and `cpu`/`gpu` in the terminal:
 
 ```bash
-python classical_pipeline/run_pipeline.py \
-    --dataset iitd \
-    --images-dir "/path/to/IITD" \
-    --masks-dir "datasets/IITD/masks" \
-    --output-dir "results/IITD/classical"
+python run_experiment.py -- --images /path/to/images --masks /path/to/masks
 ```
 
-## U-Net pipeline
+Options placed after the second `--` are passed to the selected pipeline. For example, a short U-Net test can be requested with `-- --images ... --masks ... -- --epochs 1 --batch-size 1`.
 
-Run U-Net training and evaluation for CASIA-IrisV1:
+## Explicit per-profile scripts
+
+Each profile can also be run directly, which is useful for a fixed experiment command in a lab notebook or batch job:
 
 ```bash
-python unet_pipeline/run_pipeline.py \
-    --dataset casia \
-    --images-dir "/path/to/CASIA-IrisV1" \
-    --masks-dir "datasets/CASIA-IrisV1/masks" \
-    --output-dir "results/CASIA-IrisV1/unet" \
-    --mode train-evaluate
+python scripts/run_casia_classical_cpu.py \
+  --images /path/to/CASIA/images \
+  --masks /path/to/CASIA/pupil_masks
+
+python scripts/run_cataract1k_unet_gpu.py \
+  --images /path/to/Cataract1K/frames \
+  --masks /path/to/Cataract1K/pupil_masks \
+  -- --epochs 20 --batch-size 2
 ```
 
-Run U-Net training and evaluation for IITD:
+All scripts accept `--dry-run` to display the final underlying command without processing data. The optional `--max-images N` applies to the classical wrapper; use U-Net options after `--` for U-Net-specific parameters.
 
-```bash
-python unet_pipeline/run_pipeline.py \
-    --dataset iitd \
-    --images-dir "/path/to/IITD" \
-    --masks-dir "datasets/IITD/masks" \
-    --output-dir "results/IITD/unet" \
-    --mode train-evaluate
-```
+## CPU and GPU behavior
 
-## Evaluation
+The requested device and the actually used device are saved in `run_configuration.json` inside the result directory.
 
-The pipelines support the calculation of:
+- U-Net with `--device gpu` queries TensorFlow for CUDA-capable devices. When none is available, it prints `Nie ma dostępnego GPU; uruchamiam U-Net na CPU` and forces CPU execution.
+- The external classical `Iris-Recognition-master` implementation has no GPU backend. Its `*_gpu.py` scripts are retained for a complete, uniform matrix of experiments, but explicitly state that they fall back to CPU.
+- `--device cpu` always disables CUDA for the launched U-Net process.
 
-- Intersection over Union;
-- Dice coefficient;
-- pixel accuracy;
-- precision;
-- recall;
-- specificity;
-- processing time per image;
-- Top-1 biometric identification accuracy.
+## Metrics and outputs
 
-## Data availability
+The wrappers save per-image processing time, segmentation metrics such as IoU and Dice, diagnostic images and summaries. The classical wrapper additionally runs the implemented biometric identification evaluation where its inputs are available. U-Net output includes training/evaluation artifacts as documented in `pupil-segmentation-unet-evaluation/README.md`.
 
-The original CASIA-IrisV1 and IITD images are not redistributed in this repository.
+## Data protection and reproducibility
 
-Users must obtain the datasets independently and comply with the licences and terms specified by their official providers.
+Do not commit private datasets, paths exported by experiment results, model weights, or generated results. The root `.gitignore` excludes common local data/result locations. Before publishing any new artifact, verify that it contains no image data or absolute local paths.
 
 ## Citation
 
@@ -202,4 +124,4 @@ Users must obtain the datasets independently and comply with the licences and te
   author = {Ignatowicz, Alicja Anna and Marciniak, Tomasz},
   year   = {2026}
 }
-
+```

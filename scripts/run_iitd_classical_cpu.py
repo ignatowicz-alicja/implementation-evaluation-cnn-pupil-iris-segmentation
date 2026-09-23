@@ -1,0 +1,2 @@
+from _run_profile import main
+main("iitd", "classical", "cpu")

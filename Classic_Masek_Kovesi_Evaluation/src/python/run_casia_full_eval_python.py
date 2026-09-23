@@ -162,11 +162,16 @@ def find_images(root: Path, extensions: Iterable[str]) -> List[Path]:
     return sorted(files, key=natural_key)
 
 
-def identity_from_path(path: Path) -> str:
+def identity_from_path(path: Path, mode: str = "auto") -> str:
     """
     Dla CASIA V1 najpewniejszy identyfikator to pierwsze 3 cyfry z nazwy pliku, np. 001_1_1.bmp -> 001.
     Jeśli nazwa nie pasuje, używany jest folder nadrzędny.
     """
+    if mode == "parent":
+        return path.parent.name
+    if mode == "stem_prefix":
+        return re.split(r"[_\-\s]", path.stem, maxsplit=1)[0]
+
     m = re.match(r"(\d{1,4})[_\-]", path.stem)
     if m:
         return m.group(1).zfill(3)
@@ -593,6 +598,7 @@ def evaluate_dataset(
     bad_iou_threshold: float,
     bad_dice_threshold: float,
     max_images: int = 0,
+    identity_mode: str = "auto",
 ) -> dict:
     from fnc.matching import calHammingDist
 
@@ -630,7 +636,7 @@ def evaluate_dataset(
             rel_path = str(img_path.relative_to(images_dir))
         except Exception:
             rel_path = img_path.name
-        identity = identity_from_path(img_path)
+        identity = identity_from_path(img_path, identity_mode)
         base_row = {
             "dataset": dataset_name,
             "index": idx,
@@ -982,6 +988,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--gt-dir", default=DEFAULT_GT_DIR, help="Folder z maskami GT źrenicy.")
     parser.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="Folder wyjściowy wyników.")
     parser.add_argument("--dataset", choices=["jpg", "bmp", "both"], default="both", help="Którą bazę uruchomić.")
+    parser.add_argument("--images-dir", default=None, help="Katalog obrazów jednej dowolnej bazy; zastępuje --jpg-dir/--bmp-dir.")
+    parser.add_argument("--dataset-label", default="CUSTOM", help="Etykieta wyników używana z --images-dir.")
+    parser.add_argument("--extensions", default=".bmp,.jpg,.jpeg,.png,.tif,.tiff", help="Rozszerzenia dla --images-dir, rozdzielone przecinkami.")
+    parser.add_argument("--identity-mode", choices=["auto", "parent", "stem_prefix"], default="auto", help="Sposób określania identyfikatora osoby/serii.")
     parser.add_argument("--jpg-dir", default=DEFAULT_DATASETS[0]["images_dir"], help="Folder bazy CASIA JPG.")
     parser.add_argument("--bmp-dir", default=DEFAULT_DATASETS[1]["images_dir"], help="Folder bazy CASIA BMP.")
     parser.add_argument("--bad-iou-threshold", type=float, default=BAD_IOU_THRESHOLD, help="Próg IoU poniżej którego zapisujemy błąd.")
@@ -994,15 +1004,20 @@ def main() -> None:
     args = parse_args()
     add_original_code_to_path(args.code_dir)
 
-    selected = []
-    if args.dataset in ("jpg", "both"):
-        ds = dict(DEFAULT_DATASETS[0])
-        ds["images_dir"] = args.jpg_dir
-        selected.append(ds)
-    if args.dataset in ("bmp", "both"):
-        ds = dict(DEFAULT_DATASETS[1])
-        ds["images_dir"] = args.bmp_dir
-        selected.append(ds)
+    if args.images_dir:
+        extensions = [item.strip().lower() for item in args.extensions.split(",") if item.strip()]
+        extensions = [item if item.startswith(".") else f".{item}" for item in extensions]
+        selected = [{"name": args.dataset_label, "images_dir": args.images_dir, "extensions": extensions}]
+    else:
+        selected = []
+        if args.dataset in ("jpg", "both"):
+            ds = dict(DEFAULT_DATASETS[0])
+            ds["images_dir"] = args.jpg_dir
+            selected.append(ds)
+        if args.dataset in ("bmp", "both"):
+            ds = dict(DEFAULT_DATASETS[1])
+            ds["images_dir"] = args.bmp_dir
+            selected.append(ds)
 
     output_dir = Path(args.output_dir)
     mkdir(output_dir)
@@ -1019,6 +1034,7 @@ def main() -> None:
             bad_iou_threshold=args.bad_iou_threshold,
             bad_dice_threshold=args.bad_dice_threshold,
             max_images=args.max_images,
+            identity_mode=args.identity_mode,
         )
         all_summaries[ds["name"]] = summary
 

@@ -1,0 +1,19 @@
+# Local virtual environments and Python artefacts
+.venv/
+__pycache__/
+*.py[cod]
+
+# Datasets, generated results, checkpoints and local machine metadata
+data/
+datasets/
+results/
+output/
+outputs/
+checkpoints/
+*.h5
+*.keras
+*.ckpt
+
+# Local editor/operating-system files
+.DS_Store
+Thumbs.db
